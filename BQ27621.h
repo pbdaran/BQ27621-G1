@@ -4,6 +4,9 @@
 #include <Arduino.h>
 #include <Wire.h>
 
+// ======== BQ27621 Arduino Library ========
+// See BQ27621-G1 Technical Reference Manual for more details.
+
 class BQ27621 {
 public:
     // Constructor
@@ -48,24 +51,28 @@ public:
     // Extended Commands
     uint16_t getOpConfig();
     uint16_t getDesignCapacity();
-    void setDesignCapacity(uint16_t capacity);
+    void setDesignCapacity(uint16_t capacity, bool permanent = false); // permanent = true updates flash, false is debug/volatile
     uint8_t getBlockDataChecksum();
     void setBlockDataChecksum(uint8_t checksum);
     void setBlockDataControl(uint8_t value);
     void selectDataClass(uint8_t classId);
     void selectDataBlock(uint8_t blockId);
-    void writeBlockData(uint8_t offset, uint8_t* data, uint8_t len);
+    void writeBlockData(uint8_t offset, const uint8_t* data, uint8_t len);
     void readBlockData(uint8_t offset, uint8_t* data, uint8_t len);
 
-    // Data Memory Parameter Access
+    // Data Memory Parameter Access (All now use block-rw-safe methods)
     void setSafetyParameters(uint16_t ot, uint16_t ut, uint8_t tHysteresis);
     void setChargeTerminationParameters(uint16_t minTaperCap, uint8_t taperWindow, int8_t fcSet, uint8_t fcClear);
-    void setSOCThresholds(uint8_t socfSet, uint8_t socfClear);
+    void setSOCThresholds(uint8_t soc1Set, uint8_t soc1Clear, uint8_t socfSet, uint8_t socfClear);
     void setOpConfig(uint16_t config);
     void setOpConfigB(uint8_t config);
     void setSleepCurrent(uint16_t current);
     void setTerminateVoltage(uint16_t voltage);
     void setChemID(uint16_t chemId);
+
+    // Helper for block reads and updates
+    void readDataBlock(uint8_t classId, uint8_t blockId, uint8_t* blockData32);
+    void writeDataBlock(uint8_t classId, uint8_t blockId, const uint8_t* blockData32);
 
 private:
     uint8_t _i2cAddress;
@@ -75,11 +82,11 @@ private:
     void writeWord(uint8_t command, uint16_t data);
     uint8_t readByte(uint8_t command);
     void writeByte(uint8_t command, uint8_t data);
-    void writeBlock(uint8_t command, uint8_t* data, uint8_t len);
+    void writeBlock(uint8_t command, const uint8_t* data, uint8_t len);
     void readBlock(uint8_t command, uint8_t* data, uint8_t len);
 
-    // CRC Calculation for Data Memory
-    uint8_t calculateChecksum(uint8_t* data, uint8_t len);
+    // CRC Calculation for Data Memory (32 bytes checksum only)
+    uint8_t calculateChecksum(const uint8_t* data, uint8_t len);
 };
 
 #endif
